@@ -1,6 +1,8 @@
 package tests;
 
+import io.qameta.allure.Owner;
 import models.*;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,17 +15,8 @@ import static specs.UserSpec.responseSpec;
 
 public class ReqresInTests extends TestBase {
     @Test
-    void checkUserDataTest() {
-        step("Получение информации о существующем пользователе", () -> {
-            given(requestSpec)
-                    .get("/users/5")
-                    .then()
-                    .spec(responseSpec)
-                    .statusCode(200);
-        });
-    }
-
-    @Test
+    @Owner("VS")
+    @DisplayName("Проверка статус кода при запросе несуществующего ресурса")
     void getNotExistentUserTest() {
         step("Получение информации о несуществующем пользователе", () -> {
             given(requestSpec)
@@ -35,6 +28,8 @@ public class ReqresInTests extends TestBase {
     }
 
     @Test
+    @Owner("VS")
+    @DisplayName("Создание пользователя и проверка имени и профессии")
     void createUserTest() {
         CreateUserDataModel userBody = new CreateUserDataModel();
         userBody.setName("morpheus");
@@ -57,6 +52,8 @@ public class ReqresInTests extends TestBase {
     }
 
     @Test
+    @Owner("VS")
+    @DisplayName("Удаление пользователя и проверка статус кода")
     void deleteUserTest() {
         step("Удаление пользователя", () -> {
             given(requestSpec)
@@ -67,7 +64,38 @@ public class ReqresInTests extends TestBase {
         });
     }
 
+
     @Test
+    @Owner("VS")
+    @DisplayName("Проверка данных со страницы с пользователями")
+    void checkUsersDataOnPageTest() {
+        UserListResponseModel response = step("Запрос списка пользователей", () ->
+                given(requestSpec)
+                        .when()
+                        .get("users?page=2")
+                        .then()
+                        .spec(responseSpec)
+                        .statusCode(200)
+                        .extract().as(UserListResponseModel.class));
+        step("Проверка данных из ответа", () -> {
+            assertEquals(2, response.getPage());
+            assertEquals(6, response.getPerPage());
+            assertEquals(12, response.getTotal());
+            assertEquals(2, response.getTotalPages());
+        });
+        step("Проверка данных о первом объекте из ключа data в ответе", () -> {
+            List<UserListResponseModel.DataList> data = response.getData();
+            assertEquals(7, data.get(0).getId());
+            assertEquals("michael.lawson@reqres.in", data.get(0).getEmail());
+            assertEquals("Michael", data.get(0).getFirstName());
+            assertEquals("Lawson", data.get(0).getLastName());
+            assertEquals("https://reqres.in/img/faces/7-image.jpg", data.get(0).getAvatar());
+        });
+    }
+
+    @Test
+    @Owner("VS")
+    @DisplayName("Проверка идентификатора и токена после успешной регистрации")
     void checkSuccessfulRegisterTest() {
         SuccessfulRegisterRequestModel authBody = new SuccessfulRegisterRequestModel();
         authBody.setEmail("eve.holt@reqres.in");
@@ -88,38 +116,14 @@ public class ReqresInTests extends TestBase {
         });
     }
 
-    @Test
-    void checkUsersDataOnPageTest() {
-        UserListResponseModel response = step("Запрос списка пользователей", () ->
-                given(requestSpec)
-                        .when()
-                        .get("users?page=2")
-                        .then()
-                        .spec(responseSpec)
-                        .statusCode(200)
-                        .extract().as(UserListResponseModel.class));
-        step("Проверка данных из ответа", () -> {
-            assertEquals(2, response.getPage());
-            assertEquals(6, response.getPerPage());
-            assertEquals(12,response.getTotal());
-            assertEquals(2, response.getTotalPages());
-        });
-        step("Проверка данных о первом объекте из ключа data в ответе", () -> {
-            List<UserListResponseModel.DataList> data = response.getData();
-            assertEquals(7, data.get(0).getId());
-            assertEquals("michael.lawson@reqres.in", data.get(0).getEmail());
-            assertEquals("Michael", data.get(0).getFirstName());
-            assertEquals("Lawson", data.get(0).getLastName());
-            assertEquals("https://reqres.in/img/faces/7-image.jpg", data.get(0).getAvatar());
-        });
-    }
-
 
     @Test
+    @Owner("VS")
+    @DisplayName("Проверка сообщения об отсутствии пароля при авторизации")
     void checkUnsuccessfulRegisterTest() {
         UnsuccessfulRegisterRequestModel authBody = new UnsuccessfulRegisterRequestModel();
         authBody.setEmail("sydney@fife");
-        UnsuccessfulRegisterResponseModel response = step("Отправка запроса на неудачную регистрацию", () ->
+        UnsuccessfulRegisterResponseModel response = step("Отправка запроса на неудачную регистрацию при отсутствии пароля", () ->
                 given(requestSpec)
                         .body(authBody)
                         .when()
